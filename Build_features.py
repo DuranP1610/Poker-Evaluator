@@ -39,32 +39,28 @@ def parse_board(row):
             board.append(c)
     return board
 
-
-def build_features(row):
-    hole_strs = [row["hole_card_1"], row["hole_card_2"]]
-    board_strs = parse_board(row)
-
+def compute_features(hole_strs, board_strs, num_opponents):
+   
     r1, r2 = rank_of(hole_strs[0]), rank_of(hole_strs[1])
     hole_high, hole_low = max(r1, r2), min(r1, r2)
     suited = int(suit_of(hole_strs[0]) == suit_of(hole_strs[1]))
     pocket_pair = int(r1 == r2)
-
-    street = int(row["street"])
-    num_opponents = int(row["num_opponents"])
-
+ 
+    street = len(board_strs)
+ 
     # postflop: use treys evaluator for objective hand strength
     if street >= 3:
         hole_ints = [Card.new(c) for c in hole_strs]
         board_ints = [Card.new(c) for c in board_strs]
         score = evaluator.evaluate(board_ints, hole_ints)
         hand_class = evaluator.get_rank_class(score)  # 1=straight flush ... 9=high card
-        # normalize score to 0-1 (treys scores range roughly 1-7462, lower=better)
+        # normalize score to 0-1 
         normalized_strength = 1 - (score / 7462)
     else:
         # preflop: no evaluator score possible, use neutral placeholders
         hand_class = 0
         normalized_strength = 0.0
-
+ 
     return {
         "hole_high": hole_high,
         "hole_low": hole_low,
@@ -74,10 +70,18 @@ def build_features(row):
         "num_opponents": num_opponents,
         "hand_class": hand_class,
         "normalized_strength": round(normalized_strength, 4),
-        "win_pct": float(row["win_pct"]),
-        "tie_pct": float(row["tie_pct"]),
-        "loss_pct": float(row["loss_pct"]),
     }
+ 
+def build_features(row):
+    hole_strs = [row["hole_card_1"], row["hole_card_2"]]
+    board_strs = parse_board(row)
+    num_opponents = int(row["num_opponents"])
+ 
+    features = compute_features(hole_strs, board_strs, num_opponents)
+    features["win_pct"] = float(row["win_pct"])
+    features["tie_pct"] = float(row["tie_pct"])
+    features["loss_pct"] = float(row["loss_pct"])
+    return features
 
 
 def process_file(input_file, output_file):
@@ -92,7 +96,6 @@ def process_file(input_file, output_file):
         writer.writerows(rows)
 
     return rows
-
 
 if __name__ == "__main__":
     rows = process_file(INPUT_FILE, OUTPUT_FILE)

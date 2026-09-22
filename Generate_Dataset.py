@@ -17,7 +17,7 @@ RANKS = "23456789TJQKA"
 SUITS = "shdc"
 
 # --- tunables ---
-NUM_SAMPLES = 3000          # how many training rows to generate
+NUM_SAMPLES = 30000         # how many training rows to generate
 SIMS_PER_SAMPLE = 500       # Monte Carlo trials per row (accuracy vs speed)
 MAX_OPPONENTS = 8
 OUTPUT_FILE = "poker_dataset.csv"
