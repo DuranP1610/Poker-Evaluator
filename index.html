@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Live Poker Equity Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #05070d; --bg-mid: #0a1330; --panel: #0d1733;
+    --panel-border: rgba(201, 166, 89, 0.18);
+    --gold: #c9a659; --gold-bright: #eecd8a;
+    --cream: #f2efe4; --cream-dim: #93a0bd;
+    --danger: #e0a3a3;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; font-family: var(--sans);
+    background:
+      radial-gradient(ellipse 800px 450px at 50% -8%, rgba(201,166,89,0.10), transparent 60%),
+      radial-gradient(ellipse 1100px 700px at 50% 105%, var(--bg-mid), var(--bg-deep) 75%);
+    color: var(--cream); min-height: 100vh; padding: 32px 16px;
+    padding-top: calc(32px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  }
+  .container { max-width: 640px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 36px; }
+  .suit-motif { font-size: 0.9rem; letter-spacing: 0.5em; color: var(--gold); opacity: 0.7; margin-bottom: 10px; }
+  h1 {
+    font-family: var(--serif); font-weight: 500; font-optical-sizing: auto;
+    font-size: clamp(1.7rem, 5vw, 2.3rem); margin: 0 0 10px 0; color: var(--cream);
+    letter-spacing: 0.01em;
+  }
+  .subtitle {
+    color: var(--cream-dim); margin: 0 auto; font-size: 0.95rem;
+    max-width: 46ch; line-height: 1.5;
+  }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 4px; padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .panel h2 {
+    margin: 0 0 16px 0; font-size: 0.8rem; font-weight: 600;
+    color: var(--gold); letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel h2::after {
+    content: ""; flex: 1; height: 1px;
+    background: var(--panel-border);
+  }
+
+  .card-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .card-slot { flex: 1; min-width: 90px; }
+  .card-slot label { display: block; font-size: 0.72rem; color: var(--cream-dim); margin-bottom: 6px; }
+
+  select {
+    width: 100%; padding: 11px 10px; border-radius: 3px;
+    border: 1px solid rgba(201,166,89,0.3);
+    background: #fbf8f0; color: #1a1f1a; font-family: var(--sans);
+    font-size: 0.95rem; cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    transition: border-color 0.15s ease;
+  }
+  select:hover { border-color: var(--gold); }
+  select:focus-visible {
+    outline: 2px solid var(--gold-bright); outline-offset: 1px;
+  }
+
+  .opponents-row { display: flex; align-items: center; gap: 16px; margin-top: 2px; }
+  input[type="range"] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 3px; background: rgba(201,166,89,0.25); border-radius: 2px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--gold-bright); cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(227,197,132,0.15);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; border: none;
+    background: var(--gold-bright); cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(227,197,132,0.15);
+  }
+  .opponents-value {
+    font-family: var(--serif); font-size: 1.3rem; color: var(--gold-bright);
+    min-width: 24px; text-align: center;
+  }
+
+  .results { text-align: center; }
+  .win-pct {
+    font-family: var(--serif); font-weight: 500; font-optical-sizing: auto;
+    font-variant-numeric: tabular-nums;
+    font-size: 3.4rem; color: var(--gold-bright);
+    margin: 10px 0; line-height: 1;
+  }
+  .win-label {
+    color: var(--cream-dim); font-size: 0.78rem;
+    letter-spacing: 0.04em;
+  }
+  .breakdown { display: flex; justify-content: center; gap: 28px; margin-top: 14px; font-size: 0.88rem; color: var(--cream-dim); }
+
+  button {
+    display: block; width: 100%; padding: 14px; border-radius: 3px;
+    border: 1px solid var(--gold);
+    background: transparent; color: var(--gold-bright); font-family: var(--sans);
+    font-size: 0.92rem; font-weight: 500; letter-spacing: 0.02em;
+    cursor: pointer; margin-top: 18px; transition: background 0.15s ease, color 0.15s ease;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:hover:not(:disabled) { background: var(--gold); color: #1a1f1a; }
+
+  .sim-result { text-align: center; margin-top: 18px; }
+  .error-msg { color: var(--danger); text-align: center; font-size: 0.88rem; margin-top: 10px; }
+  .placeholder { text-align: center; color: var(--cream-dim); padding: 24px 0; font-size: 0.92rem; }
+  .spinner { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer {
+    text-align: center; font-size: 0.75rem; color: var(--cream-dim);
+    opacity: 0.6; margin-top: 32px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="suit-motif">♠ ♥ ♦ ♣</div>
+    <h1>Live Poker Equity Calculator</h1>
+    <p class="subtitle">Pick your hole cards, add the board as it's revealed, and watch your win probability update.</p>
+  </header>
+
+  <div class="panel">
+    <h2>Your hole cards</h2>
+    <div class="card-row">
+      <div class="card-slot">
+        <label>Hole card 1</label>
+        <div style="display:flex; gap:6px;">
+          <select id="hole1-rank"></select>
+          <select id="hole1-suit"></select>
+        </div>
+      </div>
+      <div class="card-slot">
+        <label>Hole card 2</label>
+        <div style="display:flex; gap:6px;">
+          <select id="hole2-rank"></select>
+          <select id="hole2-suit"></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Board cards — leave blank for preflop</h2>
+    <div class="card-row" id="board-row"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Opponents</h2>
+    <div class="opponents-row">
+      <input type="range" id="opponents" min="1" max="8" value="1">
+      <span class="opponents-value" id="opponents-value">1</span>
+    </div>
+  </div>
+
+  <div class="panel results">
+    <div id="error-area"></div>
+    <div id="results-area" class="placeholder">Select both hole cards to see your win probability.</div>
+    <button id="ml-button" style="display:none;">Show ML model prediction (instant)</button>
+    <div id="ml-result" class="sim-result"></div>
+  </div>
+
+  <footer>ML prediction from a Random Forest trained on Monte Carlo–simulated hands · Runs entirely in your browser, no server involved</footer>
+</div>
+
+<script src="model.js"></script>
+<script src="poker_logic.js"></script>
+<script>
+const UI_RANKS = "23456789TJQKA".split("");
+const RANK_LABELS = { T: "10", J: "J", Q: "Q", K: "K", A: "A" };
+const SUIT_SYMBOLS = { s: "♠", h: "♥", d: "♦", c: "♣" };
+
+function populateRankSelect(sel) {
+  sel.innerHTML = '<option value="">Rank</option>' +
+    UI_RANKS.map(r => `<option value="${r}">${RANK_LABELS[r] || r}</option>`).join("");
+}
+function populateSuitSelect(sel) {
+  sel.innerHTML = '<option value="">Suit</option>' +
+    Object.entries(SUIT_SYMBOLS).map(([s, sym]) => `<option value="${s}">${sym}</option>`).join("");
+}
+
+// build hole card selects
+populateRankSelect(document.getElementById("hole1-rank"));
+populateSuitSelect(document.getElementById("hole1-suit"));
+populateRankSelect(document.getElementById("hole2-rank"));
+populateSuitSelect(document.getElementById("hole2-suit"));
+
+// build 5 board card slots
+const boardRow = document.getElementById("board-row");
+const boardLabels = ["Flop 1", "Flop 2", "Flop 3", "Turn", "River"];
+boardLabels.forEach((label, i) => {
+  const slot = document.createElement("div");
+  slot.className = "card-slot";
+  slot.innerHTML = `
+    <label>${label}</label>
+    <div style="display:flex; gap:6px;">
+      <select id="board${i}-rank"></select>
+      <select id="board${i}-suit"></select>
+    </div>`;
+  boardRow.appendChild(slot);
+  populateRankSelect(slot.querySelector(`#board${i}-rank`));
+  populateSuitSelect(slot.querySelector(`#board${i}-suit`));
+});
+
+function getCard(rankId, suitId) {
+  const rank = document.getElementById(rankId).value;
+  const suit = document.getElementById(suitId).value;
+  if (!rank || !suit) return null;
+  return rank + suit;
+}
+
+function getAllSelectedCards() {
+  const hole1 = getCard("hole1-rank", "hole1-suit");
+  const hole2 = getCard("hole2-rank", "hole2-suit");
+  const board = [];
+  for (let i = 0; i < 5; i++) {
+    const c = getCard(`board${i}-rank`, `board${i}-suit`);
+    if (c) board.push(c);
+  }
+  return { hole1, hole2, board };
+}
+
+function updateOpponentsLabel() {
+  document.getElementById("opponents-value").textContent = document.getElementById("opponents").value;
+}
+document.getElementById("opponents").addEventListener("input", () => {
+  updateOpponentsLabel();
+  recompute();
+});
+
+function recompute() {
+  const { hole1, hole2, board } = getAllSelectedCards();
+  const errorArea = document.getElementById("error-area");
+  const resultsArea = document.getElementById("results-area");
+  const mlButton = document.getElementById("ml-button");
+  const mlResult = document.getElementById("ml-result");
+  mlResult.innerHTML = "";
+  errorArea.innerHTML = "";
+
+  if (!hole1 || !hole2) {
+    resultsArea.className = "placeholder";
+    resultsArea.textContent = "Select both hole cards to see your win probability.";
+    mlButton.style.display = "none";
+    return;
+  }
+
+  const allCards = [hole1, hole2, ...board];
+  const duplicates = allCards.filter((c, i) => allCards.indexOf(c) !== i);
+  if (duplicates.length > 0) {
+    errorArea.innerHTML = `<div class="error-msg">Duplicate card selected: ${duplicates[0]}. Each card can only be used once.</div>`;
+    resultsArea.className = "placeholder";
+    resultsArea.textContent = "";
+    mlButton.style.display = "none";
+    return;
+  }
+
+  if (![0, 3, 4, 5].includes(board.length)) {
+    errorArea.innerHTML = `<div class="error-msg">Board cards must be filled in order: 0 (preflop), 3 (flop), 4 (turn), or 5 (river).</div>`;
+    resultsArea.className = "placeholder";
+    resultsArea.textContent = "";
+    mlButton.style.display = "none";
+    return;
+  }
+
+  const numOpponents = parseInt(document.getElementById("opponents").value, 10);
+
+  resultsArea.className = "placeholder";
+  resultsArea.innerHTML = '<span class="spinner">⏳</span> Simulating thousands of outcomes...';
+  mlButton.style.display = "block";
+  mlButton.onclick = () => showMlPrediction(hole1, hole2, board, numOpponents);
+
+  // setTimeout lets the spinner render before the (synchronous, CPU-bound) simulation blocks the thread
+  setTimeout(() => {
+    const result = simulateEquity([hole1, hole2], board, numOpponents, 5000);
+    resultsArea.className = "";
+    resultsArea.innerHTML = `
+      <div class="win-label">Monte Carlo simulation (Raw Statistics)</div>
+      <div class="win-pct">${result.winPct.toFixed(1)}%</div>
+      <div class="breakdown">
+        <span>Tie: ${result.tiePct.toFixed(1)}%</span>
+        <span>Loss: ${result.lossPct.toFixed(1)}%</span>
+      </div>`;
+  }, 50);
+}
+
+function showMlPrediction(hole1, hole2, board, numOpponents) {
+  const mlResult = document.getElementById("ml-result");
+  const features = computeFeatures([hole1, hole2], board, numOpponents);
+  const prediction = predictWinPct(features);
+  mlResult.innerHTML = `
+    <div class="win-label">ML model prediction (instant)</div>
+    <div class="win-pct" style="font-size:2rem;">${prediction.toFixed(1)}%</div>`;
+}
+
+// wire up recompute to every select
+document.querySelectorAll("select").forEach(sel => sel.addEventListener("change", recompute));
+updateOpponentsLabel();
+</script>
+</body>
+</html>
