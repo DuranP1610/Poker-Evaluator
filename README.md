@@ -93,3 +93,5 @@ Python (scikit-learn, pandas, treys, m2cgen) for the data pipeline · vanilla Ja
 - Board-texture features (flush draw, straight draw, paired board possibilities) to close the gap described above.
 - Opponent range modeling, rather than assuming purely random opponent hands.
 - A "replay a famous hand" mode showing win probability evolve street-by-street.
+
+<img width="928" height="896" alt="image" src="https://github.com/user-attachments/assets/bc15dd55-cc29-4c78-b101-28fd96665b66" />
