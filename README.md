@@ -59,7 +59,21 @@ The deployed model trades a small amount of accuracy for a ~10x smaller file siz
 
 The model's features describe the strength of *your* hand, but not the danger of the *board*. On a board like K♠ Q♠ J♠ (three cards of the same suit), a strong made hand is worth less than the model predicts, because many opponent hands now have live flush equity — something the Monte Carlo simulation captures automatically (it deals real random opponent hands) but the ML model's current features don't represent at all.
 
-This gap is real and measurable — a deeper analysis, comparing the model against ground-truth simulation across different board textures, is documented separately in `notebooks/`.
+This isn't just a hunch — `notebooks/model_limitations_board_texture.ipynb` tests it properly: 160 randomly sampled hands, sorted into `dry`, `straight_draw`, `flush_draw`, and `paired` board categories, comparing both trained models (Gradient Boosting and the deployed Random Forest) against Monte Carlo ground truth. Error climbs consistently across both models as board danger increases:
+
+| Board texture | Gradient Boosting MAE | Random Forest MAE (deployed) |
+|---|---|---|
+| dry | 6.2 | 4.4 |
+| straight_draw | 9.4 | 7.5 |
+| flush_draw | 11.6 | 10.3 |
+| paired | 12.1 | 12.7 |
+
+Both models — trained differently — show the same pattern, which points to the shared feature set as the actual limitation, not a quirk of either algorithm.
+
+## Notebooks
+
+- **`notebooks/Model_Limits.ipynb`** — the board-texture analysis above, in full: methodology, results, and interpretation.
+- **`notebooks/model_training_diagnostics.ipynb`** — compares how Gradient Boosting and Random Forest converge during training, tracking validation error against ensemble size for each. Surfaces a concrete example of the bagging-vs-boosting distinction: Random Forest's validation error plateaus by ~45 trees (diminishing returns, no overfitting risk from more trees), while Gradient Boosting was still improving at its final tree (#200) — suggesting `train_model.py` could benefit from more boosting stages.
 
 ## Running locally
 
@@ -93,5 +107,3 @@ Python (scikit-learn, pandas, treys, m2cgen) for the data pipeline · vanilla Ja
 - Board-texture features (flush draw, straight draw, paired board possibilities) to close the gap described above.
 - Opponent range modeling, rather than assuming purely random opponent hands.
 - A "replay a famous hand" mode showing win probability evolve street-by-street.
-
-<img width="928" height="896" alt="image" src="https://github.com/user-attachments/assets/bc15dd55-cc29-4c78-b101-28fd96665b66" />
