@@ -2,7 +2,7 @@
 
 A live poker hand equity calculator that combines a Monte Carlo simulator with a trained machine learning model, running entirely in the browser with no backend server.
 
-**[Live demo →](#)** https:://duranp1610.github.io/Poker-Evaluator/
+**[Live demo →](#)** https://duranp1610.github.io/Poker-Evaluator/
 
 ## What it does
 
